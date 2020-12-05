@@ -1,0 +1,28 @@
+#[[-------------------------------------------------------------------- Main
+main() {
+  positional=()  # array of unknown arguments
+
+  while [[ ${#} -gt 0 ]]; do
+    key="$1"
+    case "${key}" in 
+      ###  add your options here
+      # -o|--options)
+      #  variable="${2}"
+      # shift
+      # ;;
+
+      *) # unknown options
+        printf "Unknown argument %s\n" "${1}" # remove if unknown arguments are available for some logic 
+        positional+=("${1}")
+        shift
+        ;;
+    esac
+  done
+  
+  set -- "${positional}" # restore positional parameters if needed for some logic
+
+  # logic here
+}
+#]]
+
+main "${@}" 

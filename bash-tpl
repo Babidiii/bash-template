@@ -1,0 +1,124 @@
+#!/usr/bin/env bash
+
+#[[-------------------------------------------------------------------- Settings
+set -o errexit   # abort on nonzero exitstatus
+set -o nounset   # abort on unbound variable
+set -o pipefail  # don't hide errors within pipes
+# set -o xtrace
+#]]
+
+
+#[[-------------------------------------------------------------------- Script variables
+readonly __script="$(basename "${BASH_SOURCE[0]}")"
+readonly __dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+#]]
+
+
+#[[-------------------------------------------------------------------- Utils
+usage(){
+  printf "%s [OPTIONS] -o|--output <output-file>\n\n" "${0}"
+}
+
+help_options(){
+  printf "Options :\n"
+  printf "  General options :\t\n"
+  printf "    -h, --help                 Print this help text and exit\n"
+  printf "    -o, --output FILENAME      Output in the specified file\n"
+  printf "    -p, --parse PARSE          Add parsing method in main, see PARSE for all info\n"   
+  printf "    -c, --color                Add util color script to the project and create a dir by default\n"
+}
+
+with_parse_option(){
+  case "${1}" in 
+    getopt)
+      source="${__dir}/main-with-getopt-parsing"
+      ;;
+    getopts)
+      source="${__dir}/main-with-getopts-parsing"
+      ;;
+    bash)
+      source="${__dir}/main-with-bash-parsing"
+      ;;
+    *)
+      printf "Parsing template %s unknown.\n" "${1}" 1>&2 exit 3
+      source=""
+      ;;
+  esac
+
+  echo "${source}"
+}
+#]]
+
+#[[-------------------------------------------------------------------- Main
+main() {
+  # default values
+  settings_template="$(< "${__dir}/settings-template")"
+  main_template=""
+
+  if [[ "${#}" -eq 0 ]]; then 
+    usage && exit 1
+  fi
+
+  # BEGIN_PARAMETERS_LOOP
+  while [[ $# -gt 0 ]]; do
+    i="${1}"
+    case ${i} in
+      -p=*|--parse=*)
+        parse="${2}"
+        main_template="$(< "$(with_parse_option "${parse}")")"
+        shift
+        shift
+        ;;
+      -h|--help) 
+        help_option && exit 0
+        shift
+        ;;
+      -o|--output)
+        output="${2}"
+        shift
+        shift
+        ;;
+      *) 
+        printf "Unknown parameter passed: %s\n" "${1}" 1>&2
+        usage
+        exit 1
+        ;;
+    esac
+  done
+  # END_PARAMETERS_LOOP
+
+  # check if output is set 
+  if [[ ! -n "${output}" ]]; then
+    printf "The output option -o|--output <filename> must be specified\n" 1>&2
+  fi  
+  
+  # default main_template if nothing already set
+  if [[ ! -n "${main_template}" ]]; then
+    main_template="$(< "${__dir}/main-default")"
+  fi
+
+  # if file exist ask to override the file 
+  if [[ -f "./${output}" ]]; then
+      printf "%s exists.\n" "${output}"
+      printf "Are you sure to override the file ? (y/n) "
+      read answer
+      case $answer in
+      y)
+        printf "File %s override.\n" "${output}" 
+        ;;
+      *)
+        printf "Abort.\n" && exit 2 
+        ;;
+      esac
+  fi
+
+  # generate the file
+  echo -e "#!/usr/bin/env bash\n" > "./${output}"  && \
+    echo -e "${settings_template}\n" >> "./${output}"  && \
+    echo -e "${main_template}\n" >> "./${output}" && \
+    echo "File generated"
+
+}
+#]]
+
+main "${@}"

@@ -1,0 +1,38 @@
+#[[-------------------------------------------------------------------- Main
+main() {
+  ! getopt --test > /dev/null
+  if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
+    printf "I'm sorry, getopt --test failed in this environment.\n" 1>&2
+    exit 1
+  fi
+
+  options=oi                   # Set your short options here its an exemple with -o -i or -oi ...
+  long_options=outuput,input   # Set your long options here defined as --output [] --input [] ...
+
+  ! parsed="$(getopt --options="${options}" --longoptions="${long_options}" --name "${0}" -- "${@}")"
+  if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
+    # e.g. return value is 1 then getopt has complained about wrong arguments to stdout
+    exit 2
+  fi
+
+  eval set -- "$parsed" # restore the parameters from parsed
+
+  while [[ ${#} -gt 0 ]]; do
+    key="${1}"
+    case ${key} in # <---- add options in case statement 
+      --) # end 
+        shift
+        ;;
+      *) # unknown options
+        printf "Unknown argument %s\n" "${1}" 1>&2 # remove if unknown arguments are available for some logic
+        exit 3
+        ;;
+    esac
+  done
+
+
+  # add logic here
+}
+#]]
+
+main "${@}"

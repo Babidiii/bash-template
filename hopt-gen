@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+
+#[[-------------------------------------------------------------------- Settings
+set -o errexit   # abort on nonzero exitstatus
+set -o nounset   # abort on unbound variable
+set -o pipefail  # don't hide errors within pipes
+# set -o xtrace
+#]]
+
+usage(){
+  printf "%s FILE \n" "${0}" 
+  printf "\tFILE\twhich is the script where extract the options \n"
+}
+
+
+
+main(){
+
+  if [[ "${#}" -ne 1  ]]; then
+    usage && exit 1
+  fi
+
+  parse_options=$(sed -n "/BEGIN_PARAMETERS_LOOP/,/END_PARAMETERS_LOOP/p" "${1}")
+
+  printf "help_options(){\n"
+  printf '\tprintf "Options : \\n" \n'
+  (
+  while read -r line; do 
+    cpt+=1
+    if [[ "${line}" =~ -?(\|--) ]]; then
+      option="$(echo "${line//|/', '}" | sed 's/*/ARG/g' )"
+
+      printf '\tprintf "\\t%s||command description \\n" \n' "${option/\)}"
+    fi
+
+  done <<< "${parse_options}"
+  ) | column -t -s "||"
+
+  printf "}\n"
+}
+
+main "${@}"
+
