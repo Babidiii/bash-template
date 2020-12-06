@@ -11,6 +11,7 @@ set -o pipefail  # don't hide errors within pipes
 #[[-------------------------------------------------------------------- Script variables
 readonly __script="$(basename "${BASH_SOURCE[0]}")"
 readonly __dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+readonly __template_dir="${__dir}""/templates"
 #]]
 
 
@@ -31,13 +32,13 @@ help_options(){
 with_parse_option(){
   case "${1}" in 
     getopt)
-      source="${__dir}/main-with-getopt-parsing"
+      source="${__template_dir}/main-with-getopt-parsing"
       ;;
     getopts)
-      source="${__dir}/main-with-getopts-parsing"
+      source="${__template_dir}/main-with-getopts-parsing"
       ;;
     bash)
-      source="${__dir}/main-with-bash-parsing"
+      source="${__template_dir}/main-with-bash-parsing"
       ;;
     *)
       printf "Parsing template %s unknown.\n" "${1}" 1>&2 exit 3
@@ -52,7 +53,7 @@ with_parse_option(){
 #[[-------------------------------------------------------------------- Main
 main() {
   # default values
-  settings_template="$(< "${__dir}/settings-template")"
+  settings_template="$(< "${__template_dir}/settings-template")"
   main_template=""
 
   if [[ "${#}" -eq 0 ]]; then 
@@ -63,14 +64,14 @@ main() {
   while [[ $# -gt 0 ]]; do
     i="${1}"
     case ${i} in
-      -p=*|--parse=*)
+      -p|--parse)
         parse="${2}"
         main_template="$(< "$(with_parse_option "${parse}")")"
         shift
         shift
         ;;
       -h|--help) 
-        help_option && exit 0
+        help_options && exit 0
         shift
         ;;
       -o|--output)
@@ -94,7 +95,7 @@ main() {
   
   # default main_template if nothing already set
   if [[ ! -n "${main_template}" ]]; then
-    main_template="$(< "${__dir}/main-default")"
+    main_template="$(< "${__template_dir}/main-default")"
   fi
 
   # if file exist ask to override the file 
